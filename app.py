@@ -678,56 +678,56 @@ if 'df' in locals() or 'df' in globals():
                     st.success("Model Trained Successfully")
                     # st.balloons()
 
-                # Check if model is trained before showing output options
-                if st.session_state.get("model_trained"):
-                    model_obj = st.session_state.model_obj
-
-                    st.subheader("🧪 Choose Outputs to Display")
-                    show_sections = st.multiselect("Select Outputs", [
-                        "Feature Importance Chart", "Feature Importance Table", "Regression Equation", "Model Evaluation",
-                        "Actual vs Predicted Plot", "Residual Scatter with Histogram Plot", "Residual Histogram", "Residual Scatter Plot", "Learning Curve",
-                        "Make Prediction with Custom Inputs"
-                    ])
-
-                    if "Feature Importance Table" in show_sections:
-                        st.subheader("🔢 Feature Importance Table")
-                        model_obj.feature_importance_table()
-
-                    if "Feature Importance Chart" in show_sections:
-                        st.subheader("📊 Feature Importance Chart")
-                        model_obj.feature_importance_plot()
-
-                    if "Regression Equation" in show_sections:
-                        st.subheader("🧮 Regression Equation")
-                        model_obj.generate_equation()
-
-                    if "Model Evaluation" in show_sections:
-                        st.subheader("📈 Model Evaluation")
-                        model_obj.evaluate_model()
-
-                    if "Residual Scatter with Histogram Plot" in show_sections:
-                        st.subheader("📉 Residuals vs Predicted Scatter with Histogram")
-                        model_obj.residual_scatter_with_histogram()
-
-                    if "Actual vs Predicted Plot" in show_sections:
-                        st.subheader("📉 Actual vs Predicted Plot")
-                        model_obj.plot_actual_vs_predicted()
-
-                    if "Residual Histogram" in show_sections:
-                        st.subheader("📊 Residual Histogram")
-                        model_obj.residual_histogram()
-
-                    if "Residual Scatter Plot" in show_sections:
-                        st.subheader("🌀 Residuals vs Predicted Plot")
-                        model_obj.residual_scatter()
-
-                    if "Learning Curve" in show_sections:
-                        st.subheader("📚 Learning Curve")
-                        model_obj.learning_curve()
-
-                    if "Make Prediction with Custom Inputs" in show_sections:
-                        st.subheader("🧠 Make Prediction with Custom Inputs")
-                        model_obj.user_input_and_predict(model_obj, feature_columns)
+                    # Check if model is trained before showing output options
+                    if st.session_state.get("model_trained"):
+                        model_obj = st.session_state.model_obj
+    
+                        st.subheader("🧪 Choose Outputs to Display")
+                        show_sections = st.multiselect("Select Outputs", [
+                            "Feature Importance Chart", "Feature Importance Table", "Regression Equation", "Model Evaluation",
+                            "Actual vs Predicted Plot", "Residual Scatter with Histogram Plot", "Residual Histogram", "Residual Scatter Plot", "Learning Curve",
+                            "Make Prediction with Custom Inputs"
+                        ])
+    
+                        if "Feature Importance Table" in show_sections:
+                            st.subheader("🔢 Feature Importance Table")
+                            model_obj.feature_importance_table()
+    
+                        if "Feature Importance Chart" in show_sections:
+                            st.subheader("📊 Feature Importance Chart")
+                            model_obj.feature_importance_plot()
+    
+                        if "Regression Equation" in show_sections:
+                            st.subheader("🧮 Regression Equation")
+                            model_obj.generate_equation()
+    
+                        if "Model Evaluation" in show_sections:
+                            st.subheader("📈 Model Evaluation")
+                            model_obj.evaluate_model()
+    
+                        if "Residual Scatter with Histogram Plot" in show_sections:
+                            st.subheader("📉 Residuals vs Predicted Scatter with Histogram")
+                            model_obj.residual_scatter_with_histogram()
+    
+                        if "Actual vs Predicted Plot" in show_sections:
+                            st.subheader("📉 Actual vs Predicted Plot")
+                            model_obj.plot_actual_vs_predicted()
+    
+                        if "Residual Histogram" in show_sections:
+                            st.subheader("📊 Residual Histogram")
+                            model_obj.residual_histogram()
+    
+                        if "Residual Scatter Plot" in show_sections:
+                            st.subheader("🌀 Residuals vs Predicted Plot")
+                            model_obj.residual_scatter()
+    
+                        if "Learning Curve" in show_sections:
+                            st.subheader("📚 Learning Curve")
+                            model_obj.learning_curve()
+    
+                        if "Make Prediction with Custom Inputs" in show_sections:
+                            st.subheader("🧠 Make Prediction with Custom Inputs")
+                            model_obj.user_input_and_predict(model_obj, feature_columns)
 
                     
     elif Type == "Data Visualization":
