@@ -559,7 +559,7 @@ if uploaded_file is not None:
 
         st.success("File uploaded successfully!")
 
-        # df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
 
         # Show the dataframe
         st.subheader("🔍 Data Preview")
@@ -588,6 +588,13 @@ if uploaded_file is not None:
         # Display the summary table
         st.dataframe(summary_df.style.format({'% Missing Values': '{:.2f}%'}))
 
+        columns_to_drop = st.multiselect("Select columns to delete", df.columns)
+        
+        if columns_to_drop:
+            df = df.drop(columns=columns_to_drop)
+            st.write("Updated Data:")
+            st.dataframe(df)
+
         def handle_missing_values(df, strategy):
             if strategy == "Drop missing values":
                 df = df.dropna()
@@ -605,13 +612,6 @@ if uploaded_file is not None:
         if missing_value_strategy:
             df = handle_missing_values(df, missing_value_strategy)
             
-            st.write("Updated Data:")
-            st.dataframe(df)
-
-        columns_to_drop = st.multiselect("Select columns to delete", df.columns)
-        
-        if columns_to_drop:
-            df = df.drop(columns=columns_to_drop)
             st.write("Updated Data:")
             st.dataframe(df)
 
