@@ -10,6 +10,8 @@
 # Import necessary libraries
 
 import streamlit as st
+import time
+# from st_pages import add_page_title
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,6 +24,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, learning_curve
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, root_mean_squared_error
 from sklearn.preprocessing import StandardScaler
+from itertools import combinations
 import pickle
 import io
 
@@ -113,7 +116,7 @@ class Visualize:
         </div>
         """, unsafe_allow_html=True)
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"scatter_with_marginal_histogram{str(time.time())}")
 
 
     def pair_plot(self):
@@ -182,7 +185,7 @@ class Visualize:
             ),
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"pair_plot{str(time.time())}")
 
     def correlation_heatmap(self):
         st.subheader("🧮 Correlation Heatmap")
@@ -232,7 +235,7 @@ class Visualize:
             font=dict(family="Arial", size=12),
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"correlation_heatmap{str(time.time())}")
 
     def interactive_relation_scatter(self):
         st.subheader("🔍 Interactive Relation: Scatter Plot")
@@ -271,7 +274,7 @@ class Visualize:
         fig.add_hline(y=data[y_col].mean(), line_dash="dash", line_color="orange", annotation_text="Mean", annotation_position="top right")
         fig.add_hline(y=data[y_col].median(), line_dash="dash", line_color="purple", annotation_text="Median", annotation_position="bottom right")
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"interactive_relation_scatter{str(time.time())}")
 
 
     def interactive_relation_box(self):
@@ -301,14 +304,14 @@ class Visualize:
         "Outlier", "Normal")
 
         fig = px.box(
-            data, x="Bins", y=y_col, points="all",
+            data, x="Bins", y=y_col, points="all", color="Outlier",
+            color_discrete_map={"Normal": "teal", "Outlier": "red"},
             title=f"<b>{x_col} (binned) vs {y_col}</b>",
             template="plotly_white",
-            color_discrete_sequence=["teal"],
             height=600
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"interactive_relation_box{str(time.time())}")
 
 
 # Regression Models Class
@@ -383,7 +386,7 @@ class Model:
 
             max_abs_value = max(abs(self.importance_df['Importance'].min()), abs(self.importance_df['Importance'].max()))
             fig.update_xaxes(range=[-max_abs_value, max_abs_value])
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key=f"feature_importance_plot{str(time.time())}")
 
 
     def generate_equation(self):
@@ -447,7 +450,7 @@ class Model:
         fig.add_trace(go.Scatter(x=[min_val, max_val], y=[min_val, max_val], mode='lines', name='Ideal Line', line=dict(color='orange')))
         fig.update_traces(marker=dict(size=6, opacity=0.6))
         fig.update_layout(template='plotly_white')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"plot_actual_vs_predicted{str(time.time())}")
 
     def residual_histogram(self):
         residuals = self.y - self.y_pred
@@ -457,7 +460,7 @@ class Model:
         fig.add_vline(x=residuals.median(), line_dash="dot", line_color="red",
                     annotation_text="Median", annotation_position="top right")
         fig.update_layout(template='plotly_white', xaxis_title='Residuals', yaxis_title='Count')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"residual_histogram{str(time.time())}")
 
     def residual_scatter(self):
         residuals = self.y - self.y_pred
@@ -466,7 +469,7 @@ class Model:
         fig.add_hline(y=residuals.mean(), line_dash="dot", line_color="green",
                     annotation_text="Mean Residual", annotation_position="top left")
         fig.update_layout(template='plotly_white')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"residual_scatter{str(time.time())}")
     
     def residual_scatter_with_histogram(self):
         residuals = self.y - self.y_pred
@@ -484,7 +487,7 @@ class Model:
                     annotation_text="Mean Residual", annotation_position="top left")
 
         fig.update_layout(template='plotly_white')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"residual_scatter_with_histogram{str(time.time())}")
 
     def learning_curve(self):
 
@@ -533,22 +536,109 @@ class Model:
             margin=dict(t=80)
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"learning_curve{str(time.time())}")
 
+
+    def train_on_all_subsets(self, model_type='Linear Regression Model', **kwargs):
+        results = []
+        n = len(self.df)
+
+        # Iterate over all non-empty subsets of features
+        for r in range(1, len(self.feature_columns) + 1):
+            for subset in combinations(self.feature_columns, r):
+                # Create a new Model instance with subset features only
+                subset_model = Model(self.df, list(subset), self.target_column)
+
+                # Train with your existing train_model method
+                subset_model.train_model(model_type=model_type, **kwargs)
+
+                # Prepare metrics
+                mae = mean_absolute_error(subset_model.y, subset_model.y_pred)
+                mse = mean_squared_error(subset_model.y, subset_model.y_pred)
+                r2 = subset_model.model.score(subset_model.X_scaled, subset_model.y)
+                adj_r2 = (1 - (1 - r2) * (n - 1) / (n - len(subset) - 1)) if n > len(subset) + 1 else r2
+
+                
+
+                # Generate equation using your method (without streamlit display)
+                # We'll replicate your generate_equation logic here but return as string
+                if hasattr(subset_model.model, 'coef_'):
+                    intercept = subset_model.model.intercept_
+                    pivot_values = subset_model.df[list(subset)].mean()
+                    coefs = subset_model.model.coef_ / subset_model.X.std()
+                    terms = [f"({coef:.4f} * ({feat} - {pivot_values[feat]:.3f}))" for coef, feat in zip(coefs, subset)]
+                    equation = f"{self.target_column} = {intercept:.4f} + " + " + ".join(terms)
+                else:
+                    equation = "Equation not available for this model."
+
+                # Collect results
+                results.append({
+                    'subset': len(results) + 1,
+                    'features': list(subset),
+                    'r2': r2,
+                    'adj_r2': adj_r2,
+                    'mae': mae,
+                    'mse': mse,
+                    'equation': equation,
+                    'model': subset_model  # Store whole Model for plotting and later use
+                })
+
+        # Sort by adjusted R² descending
+        results = sorted(results, key=lambda x: x['adj_r2'], reverse=True)
+        return results
 
 # Dashboard Frontend
 
-st.set_page_config(page_title="Mohit's Dashboard", page_icon="⚡", initial_sidebar_state="auto", layout="wide")
+st.set_page_config(page_title="Regression Dashboard", page_icon="⚡", initial_sidebar_state="auto", layout="wide")
 
 st.title("📊 Data Visualization & 📉 Regression Model Dashboard")
 st.subheader("📁 Upload Your Dataset")
 
-# File uploader for CSV and Excel files
+
+# --- Styling Functions ---
+def style_missing_and_outliers(df, visualizer, show_missing=True, show_outliers=True):
+    styled_df = pd.DataFrame("", index=df.index, columns=df.columns)
+
+    # Outlier detection
+    if show_outliers:
+        numeric_cols = df.select_dtypes(include='number').columns
+        for col in numeric_cols:
+            outlier_mask = visualizer.detect_outliers(df[col])
+            for i in df.index:
+                if outlier_mask[i]:
+                    styled_df.at[i, col] += 'background-color: rgba(255,165,0,0.25); outline: 2px solid orange;'
+
+
+    # Missing value detection
+    if show_missing:
+        for col in df.columns:
+            for i in df.index:
+                if pd.isna(df.at[i, col]):
+                    styled_df.at[i, col] += 'background-color: rgba(255,0,0,0.25); outline: 2px solid red;'
+
+    return styled_df
+
+def mark_outliers(df, visualizer):
+    outlier_flags = []
+    for col in df.select_dtypes(include='number').columns:
+        mask = visualizer.detect_outliers(df[col])
+        outlier_flags.append(mask)
+
+    if outlier_flags:
+        combined_mask = np.logical_or.reduce(outlier_flags)
+        df["Outlier"] = np.where(combined_mask, "Outlier", "Normal")
+    else:
+        df["Outlier"] = "Normal"
+
+    return df
+
+
+# --- File Upload Logic ---
 uploaded_file = st.file_uploader("Choose a CSV or Excel file", type=["csv", "xlsx"])
 
 if uploaded_file is not None:
     try:
-        # Determine file type and read accordingly
+        # Read the file
         if uploaded_file.name.endswith(".csv"):
             df = pd.read_csv(uploaded_file)
         elif uploaded_file.name.endswith(".xlsx"):
@@ -559,11 +649,28 @@ if uploaded_file is not None:
 
         st.success("File uploaded successfully!")
 
+        # Remove unnamed index columns
         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
 
-        # Show the dataframe
+        # Visualizer instance for outlier detection
+        visualizer = Visualize(df)
+
+        # Mark outliers (adds "Outlier" column)
+        df = mark_outliers(df, visualizer)
+
         st.subheader("🔍 Data Preview")
-        st.dataframe(df)
+
+        # Toggle options
+        # st.subheader("🛠️ Highlight Options")
+        col1, col2 = st.columns(2)
+        show_missing = col1.checkbox("Highlight Missing Values", value=True)
+        show_outliers = col2.checkbox("Highlight Outliers", value=True)
+
+        # Styling
+        styled = df.style.apply(lambda _: style_missing_and_outliers(df, visualizer, show_missing, show_outliers), axis=None)
+
+        st.dataframe(styled, use_container_width=True)
+        # st.write(styled)
 
         # Show dataset shape
         st.write(f"**Shape:** {df.shape[0]} rows × {df.shape[1]} columns")
@@ -588,7 +695,7 @@ if uploaded_file is not None:
         # Display the summary table
         st.dataframe(summary_df.style.format({'% Missing Values': '{:.2f}%'}))
 
-        columns_to_drop = st.multiselect("Select columns to delete", df.columns)
+        columns_to_drop = st.multiselect("Select irrelavant columns to delete", df.columns)
         
         if columns_to_drop:
             df = df.drop(columns=columns_to_drop)
@@ -598,11 +705,11 @@ if uploaded_file is not None:
         def handle_missing_values(df, strategy):
             if strategy == "Drop missing values":
                 df = df.dropna()
-            elif strategy == "Fill with mean value":
+            if strategy == "Fill with mean value":
                 df = df.fillna(df.mean())
-            elif strategy == "Fill with median value":
+            if strategy == "Fill with median value":
                 df = df.fillna(df.median())
-            elif strategy == "Fill with mode value":
+            if strategy == "Fill with mode value":
                 df = df.fillna(df.mode().iloc[0])
             return df
         
@@ -630,6 +737,33 @@ if 'df' in locals() or 'df' in globals():
     if Type == "Model Prediction":
         # Only show selection if data is successfully loaded
         if 'df' in locals() or 'df' in globals():
+
+            viz = Visualize(df)
+
+            outlier_strategy = st.selectbox(
+                "How to handle outliers?",
+                ["Do nothing", "Remove outliers", "Replace with median", "Replace with mean"],
+                index=None,
+                placeholder="Choose an option"
+            )
+
+            def handle_outliers(df, outlier_strategy, viz):
+                for col in df.select_dtypes(include=np.number).columns:
+                    outlier_mask = viz.detect_outliers(df[col])
+                    if outlier_strategy == "Remove outliers":
+                        df = df[~outlier_mask]
+                    elif outlier_strategy == "Replace with median":
+                        median = df[col].median()
+                        df.loc[outlier_mask, col] = median
+                    elif outlier_strategy == "Replace with mean":
+                        mean = df[col].mean()
+                        df.loc[outlier_mask, col] = mean
+                return df
+            
+            if outlier_strategy and outlier_strategy != "Do nothing":
+                df = handle_outliers(df, outlier_strategy, viz)
+                st.write("Update Data after handling outliers:")
+                st.dataframe(df)
 
             st.subheader("🎯 Select Target and Feature Columns")
 
@@ -676,9 +810,9 @@ if 'df' in locals() or 'df' in globals():
 
                 if model_type == "Ridge Regression Model" or model_type == "Lasso Regression Model":
                     model_params['alpha'] = st.slider("Alpha", 0.01, 10.0, 1.0)
-                elif model_type == "RandomForest Regression Model":
+                if model_type == "RandomForest Regression Model":
                     model_params['n_estimators'] = st.slider("Number of estimators", 10, 500, 100)
-                elif model_type == "DecisionTree Regression Model":
+                if model_type == "DecisionTree Regression Model":
                     model_params['max_depth'] = st.slider("Max depth", 1, 50, 10)
 
                 # Reset training if config changes
@@ -698,58 +832,201 @@ if 'df' in locals() or 'df' in globals():
                     st.success("Model Trained Successfully")
                     # st.balloons()
 
-                # Check if model is trained before showing output options
+                # Check if model is trained before showing output optionsa
                 if st.session_state.get("model_trained"):
                     model_obj = st.session_state.model_obj
 
                     st.subheader("🧪 Choose Outputs to Display")
-                    show_sections = st.multiselect("Select Outputs", [
-                        "Feature Importance Chart", "Feature Importance Table", "Regression Equation", "Model Evaluation",
-                        "Actual vs Predicted Plot", "Residual Scatter with Histogram Plot", "Residual Histogram", "Residual Scatter Plot", "Learning Curve",
-                        "Make Prediction with Custom Inputs"
-                    ])
 
-                    if "Feature Importance Table" in show_sections:
-                        st.subheader("🔢 Feature Importance Table")
-                        model_obj.feature_importance_table()
+                    # Required session states
+                    if "selected_outputs" not in st.session_state:
+                        st.session_state.selected_outputs = []
 
-                    if "Feature Importance Chart" in show_sections:
-                        st.subheader("📊 Feature Importance Chart")
-                        model_obj.feature_importance_plot()
-
-                    if "Regression Equation" in show_sections:
-                        st.subheader("🧮 Regression Equation")
-                        model_obj.generate_equation()
-
-                    if "Model Evaluation" in show_sections:
-                        st.subheader("📈 Model Evaluation")
-                        model_obj.evaluate_model()
-
-                    if "Residual Scatter with Histogram Plot" in show_sections:
-                        st.subheader("📉 Residuals vs Predicted Scatter with Histogram")
-                        model_obj.residual_scatter_with_histogram()
-
-                    if "Actual vs Predicted Plot" in show_sections:
-                        st.subheader("📉 Actual vs Predicted Plot")
-                        model_obj.plot_actual_vs_predicted()
-
-                    if "Residual Histogram" in show_sections:
-                        st.subheader("📊 Residual Histogram")
-                        model_obj.residual_histogram()
-
-                    if "Residual Scatter Plot" in show_sections:
-                        st.subheader("🌀 Residuals vs Predicted Plot")
-                        model_obj.residual_scatter()
-
-                    if "Learning Curve" in show_sections:
-                        st.subheader("📚 Learning Curve")
-                        model_obj.learning_curve()
-
-                    if "Make Prediction with Custom Inputs" in show_sections:
-                        st.subheader("🧠 Make Prediction with Custom Inputs")
-                        model_obj.user_input_and_predict(model_obj, feature_columns)
-
+                    if "ctrl_mode" not in st.session_state:
+                        st.session_state.ctrl_mode = False
                     
+                    st.session_state.ctrl_mode = st.checkbox("Simulate Ctrl Key Held (for multi-select)")
+
+                    sections = [
+                        ("Feature Importance Chart", "📊"),
+                        ("Feature Importance Table", "🔢"),
+                        ("Regression Equation", "🧮"),
+                        ("Model Evaluation", "📈"),
+                        ("Actual vs Predicted Plot", "📉"),
+                        ("Residual Scatter with Histogram Plot", "📉"),
+                        ("Residual Histogram", "📊"),
+                        ("Residual Scatter Plot", "🌀"),
+                        ("Learning Curve", "📚"),
+                        ("Make Prediction with Custom Inputs", "🧠"),
+                        # ("Run All Subset Regression", "🔁")
+                    ]
+
+                    # CSS for buttons with hover and active effect
+                    st.markdown("""
+                        <style>
+                        .stButton > button {
+                            background-color: transparent;
+                            color: #0366d6;
+                            border: 2px solid #0366d6;
+                            padding: 0.4rem 1rem;
+                            border-radius: 8px;
+                            margin-bottom: 0.5rem;
+                            width: 100%;
+                            text-align: left;
+                            font-weight: 600;
+                            transition: all 0.2s ease-in-out;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            cursor: pointer;
+                        }
+                        .stButton > button:hover {
+                            background-color: #0366d6;
+                            color: white;
+                        }
+                        .stButton.active > button {
+                            background-color: #0366d6 !important;
+                            color: white !important;
+                            border-color: #024a9c !important;
+                        }
+                        </style>
+                    """, unsafe_allow_html=True)
+
+                    col1, col2 = st.columns([1, 4])
+
+                    with col1:
+                        for label, icon in sections:
+                            key = f"btn_{label.replace(' ', '_')}"
+                            is_selected = label in st.session_state.selected_outputs
+                            clicked = st.button(f"{icon} {label}", key=key)
+
+                            if clicked:
+                                if st.session_state.ctrl_mode:
+                                    # Multi-select logic
+                                    if is_selected:
+                                        st.session_state.selected_outputs.remove(label)
+                                    else:
+                                        st.session_state.selected_outputs.append(label)
+                                else:
+                                    # Single select logic
+                                    if is_selected and len(st.session_state.selected_outputs) == 1:
+                                        st.session_state.selected_outputs = []
+                                    else:
+                                        st.session_state.selected_outputs = [label]
+
+                            # Active button highlight
+                            if is_selected:
+                                st.markdown(f"""
+                                    <style>
+                                    div[data-testid="stButton"][key="{key}"] > button {{
+                                        background-color: #0366d6 !important;
+                                        color: white !important;
+                                        border-color: #024a9c !important;
+                                    }}
+                                    </style>
+                                """, unsafe_allow_html=True)
+
+                    with col2:
+                        if st.session_state.selected_outputs:
+                            for label in st.session_state.selected_outputs:
+                            
+                                if label == "Feature Importance Table":
+                                    st.subheader("🔢 Feature Importance Table")
+                                    model_obj.feature_importance_table()
+
+                                if label == "Feature Importance Chart":
+                                    st.subheader("📊 Feature Importance Chart")
+                                    model_obj.feature_importance_plot()
+
+                                if label == "Regression Equation":
+                                    st.subheader("🧮 Regression Equation")
+                                    model_obj.generate_equation()
+
+                                if label == "Model Evaluation":
+                                    st.subheader("📈 Model Evaluation")
+                                    model_obj.evaluate_model()
+
+                                if label == "Actual vs Predicted Plot":
+                                    st.subheader("📉 Actual vs Predicted Plot")
+                                    model_obj.plot_actual_vs_predicted()
+
+                                if label == "Residual Scatter with Histogram Plot":
+                                    st.subheader("📉 Residuals vs Predicted Scatter with Histogram")
+                                    model_obj.residual_scatter_with_histogram()
+
+                                if label == "Residual Histogram":
+                                    st.subheader("📊 Residual Histogram")
+                                    model_obj.residual_histogram()
+
+                                if label == "Residual Scatter Plot":
+                                    st.subheader("🌀 Residuals vs Predicted Scatter")
+                                    model_obj.residual_scatter()
+
+                                if label == "Learning Curve":
+                                    st.subheader("📚 Learning Curve")
+                                    model_obj.learning_curve()
+
+                                if label == "Make Prediction with Custom Inputs":
+                                    st.subheader("🧠 Make Prediction with Custom Inputs")
+                                    model_obj.user_input_and_predict(model_obj, feature_columns)
+
+
+
+                    st.markdown("## 🔁 All Subset Regression")
+
+                    if st.button("Run All Subset Regression"):
+                        all_subsets_results = model_obj.train_on_all_subsets(model_type=model_type, **model_params)
+                        st.session_state.all_subsets_results = all_subsets_results
+
+                    if "all_subsets_results" in st.session_state:
+                        results = st.session_state.all_subsets_results
+
+                        st.markdown("## Subset Results with Interactive Plots")
+
+                        for idx, result in enumerate(st.session_state.all_subsets_results):
+                            subset_no = result['subset']
+                            model = result['model']
+                            feature = (", ".join(result['features']))
+
+                            with st.expander(f"Subset :-  {feature}"):
+                                # Show metrics
+                                st.markdown(f"""
+                                **Features**: {", ".join(result['features'])}  
+                                **R²**: {round(result['r2'], 4)}  
+                                **Adjusted R²**: {round(result['adj_r2'], 4)}  
+                                **MAE**: {round(result['mae'], 4)}  
+                                **MSE**: {round(result['mse'], 4)}  
+                                **Equation**: `{result['equation']}`
+                                """)
+
+                                # Tab-based chart display
+                                tab_labels = [
+                                    "🔥 Feature Importance Plot",
+                                    "📋 Feature Importance Table",
+                                    "📈 Actual vs Predicted",
+                                    "📊 Residual Scatter",
+                                    "📉 Residual Histogram",
+                                    "🟦 Residual Scatter + Histogram",
+                                    "📐 Learning Curve"
+                                ]
+                                tabs = st.tabs(tab_labels)
+
+                                with tabs[0]:
+                                    model.feature_importance_plot()
+                                with tabs[1]:
+                                    model.feature_importance_table()
+                                with tabs[2]:
+                                    model.plot_actual_vs_predicted()
+                                with tabs[3]:
+                                    model.residual_scatter()
+                                with tabs[4]:
+                                    model.residual_histogram()
+                                with tabs[5]:
+                                    model.residual_scatter_with_histogram()
+                                with tabs[6]:
+                                    model.learning_curve()
+
+
     elif Type == "Data Visualization":
 
         if 'df' in locals() or 'df' in globals():
@@ -767,11 +1044,11 @@ if 'df' in locals() or 'df' in globals():
         # Display selected plot
         if plot_type == "Scatter with Marginal Histogram":
             viz.scatter_with_marginal_histogram()
-        elif plot_type == "Pair Plot":
+        if plot_type == "Pair Plot":
             viz.pair_plot()
-        elif plot_type == "Correlation Heatmap":
+        if plot_type == "Correlation Heatmap":
             viz.correlation_heatmap()
-        elif plot_type == "Interactive Relation Scatter":
+        if plot_type == "Interactive Relation Scatter":
             viz.interactive_relation_scatter()
-        elif plot_type == "Interactive Relation Box":
+        if plot_type == "Interactive Relation Box":
             viz.interactive_relation_box()
