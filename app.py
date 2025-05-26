@@ -630,7 +630,7 @@ def mark_outliers(df, visualizer):
     else:
         df["Outlier"] = "Normal"
 
-    return df
+    return df.drop(columns="Outlier", inplace=True)
 
 
 # --- File Upload Logic ---
