@@ -318,7 +318,7 @@ class Visualize:
 
 class Model:
     def __init__(self, df, feature_columns, target_column):
-        self.df = df
+        self.df = df = df.fillna(df.mean(numeric_only=True))
         self.feature_columns = feature_columns
         self.target_column = target_column
         self.X = df[feature_columns]
