@@ -740,8 +740,8 @@ if 'df' in locals() or 'df' in globals():
     st.subheader("🌀 Select what you want")
 
     col1, col2 = st.columns([1, 3])
-        with col1:
-            Type = st.selectbox("To Visualize or to Predict",["Data Visualization", "Model Prediction"], index=None, placeholder="Choose an option")
+    with col1:
+        Type = st.selectbox("To Visualize or to Predict",["Data Visualization", "Model Prediction"], index=None, placeholder="Choose an option")
 
     if Type == "Model Prediction":
         # Only show selection if data is successfully loaded
