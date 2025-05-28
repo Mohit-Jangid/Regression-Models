@@ -697,7 +697,9 @@ if uploaded_file is not None:
         # Display the summary table
         st.dataframe(summary_df.style.format({'% Missing Values': '{:.2f}%'}))
 
-        columns_to_drop = st.multiselect("Select irrelavant columns to delete", df.columns)
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            columns_to_drop = st.multiselect("Select irrelavant columns to delete", df.columns)
         
         if columns_to_drop:
             df = df.drop(columns=columns_to_drop)
@@ -714,8 +716,10 @@ if uploaded_file is not None:
             if strategy == "Fill with mode value":
                 df = df.fillna(df.mode().iloc[0])
             return df
-        
-        missing_value_strategy = st.selectbox("How to handle missing values?", 
+
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            missing_value_strategy = st.selectbox("How to handle missing values?", 
                                                 ["Drop missing values", "Fill with mean value", "Fill with median value", "Fill with mode value"], index=None, placeholder="Choose an option")
         
         if missing_value_strategy:
@@ -734,7 +738,10 @@ else:
 if 'df' in locals() or 'df' in globals():
 
     st.subheader("🌀 Select what you want")
-    Type = st.selectbox("To Visualize or to Predict",["Data Visualization", "Model Prediction"], index=None, placeholder="Choose an option")
+
+    col1, col2 = st.columns([1, 3])
+        with col1:
+            Type = st.selectbox("To Visualize or to Predict",["Data Visualization", "Model Prediction"], index=None, placeholder="Choose an option")
 
     if Type == "Model Prediction":
         # Only show selection if data is successfully loaded
@@ -742,12 +749,14 @@ if 'df' in locals() or 'df' in globals():
 
             viz = Visualize(df)
 
-            outlier_strategy = st.selectbox(
-                "How to handle outliers?",
-                ["Do nothing", "Remove outliers", "Replace with median", "Replace with mean"],
-                index=None,
-                placeholder="Choose an option"
-            )
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                outlier_strategy = st.selectbox(
+                    "How to handle outliers?",
+                    ["Do nothing", "Remove outliers", "Replace with median", "Replace with mean"],
+                    index=None,
+                    placeholder="Choose an option"
+                )
 
             def handle_outliers(df, outlier_strategy, viz):
                 for col in df.select_dtypes(include=np.number).columns:
@@ -768,31 +777,37 @@ if 'df' in locals() or 'df' in globals():
                 st.dataframe(df)
 
             st.subheader("🎯 Select Target and Feature Columns")
-
+            
             # Identify numeric columns
             numeric_cols = [col for col in df.columns if np.issubdtype(df[col].dropna().dtype, np.number)]
-
-            col1, col2 = st.columns(2)
-
-            # Select target column
-            target_column = col1.selectbox("Select the target column (dependent variable)", options=numeric_cols)
-
-            # Select feature columns
-            feature_columns = col2.multiselect(
-                "Select one or more feature columns (independent variables)",
-                options=[col for col in numeric_cols if col != target_column]
-            )
-
-            # Display selected columns
-            if feature_columns:
-                st.markdown("##### 🧾 Summary of Selected Columns")
-
-                col1, col2 = st.columns(2)
-
-                col1.write(f"**Target column:** `{target_column}`")
-                col2.write(f"**Feature columns ({len(feature_columns)}):** `{', '.join(feature_columns)}`")
-            else:
-                st.warning("Please select at least one feature column.")
+            
+            col1, col2 = st.columns([2, 3]) 
+            with col1:
+                st.markdown("#### 🧮 Inputs")
+                # Select target column
+                target_column = st.selectbox(
+                    "Select the target column (dependent variable)", 
+                    options=numeric_cols
+                )
+            
+                # Select feature columns
+                feature_columns = st.multiselect(
+                    "Select one or more feature columns (independent variables)",
+                    options=[col for col in numeric_cols if col != target_column]
+                )
+            
+            with col2:
+                st.markdown("#### 📊 Summary")
+            
+                if feature_columns:
+                    st.write("**Target column:**")
+                    st.code(target_column, language="text")
+            
+                    st.write(f"**Feature columns ({len(feature_columns)}):**")
+                    for col in feature_columns:
+                        st.code(col, language="text")
+                else:
+                    st.warning("Please select at least one feature column to proceed.")
 
             # Initialize session state
             if "model_trained" not in st.session_state:
@@ -805,18 +820,33 @@ if 'df' in locals() or 'df' in globals():
                 st.session_state.prev_params = {}
 
             if feature_columns and target_column:
-                
-                model_type = st.selectbox("🏗️ Choose your Model", ["Linear Regression Model", "Ridge Regression Model", "Lasso Regression Model", "RandomForest Regression Model", "DecisionTree Regression Model"])
-
-                model_params = {}
-
-                if model_type == "Ridge Regression Model" or model_type == "Lasso Regression Model":
-                    model_params['alpha'] = st.slider("Alpha", 0.01, 10.0, 1.0)
-                if model_type == "RandomForest Regression Model":
-                    model_params['n_estimators'] = st.slider("Number of estimators", 10, 500, 100)
-                if model_type == "DecisionTree Regression Model":
-                    model_params['max_depth'] = st.slider("Max depth", 1, 50, 10)
-
+                col1, col2 = st.columns([1, 4])
+            
+                with col1:
+                    with st.container():
+                        model_type = st.selectbox(
+                            "🏗️ Choose your Model", 
+                            ["Linear Regression Model", "Ridge Regression Model", "Lasso Regression Model", 
+                             "RandomForest Regression Model", "DecisionTree Regression Model"],
+                            label_visibility="visible"
+                        )
+            
+                        # Add spacing
+                        st.markdown("")
+            
+                        # Place the button directly below the selectbox, same width
+                        train_clicked = st.button("🚀 Train Model", use_container_width=True)
+            
+                with col2:
+                    model_params = {}
+            
+                    if model_type in ["Ridge Regression Model", "Lasso Regression Model"]:
+                        model_params['alpha'] = st.slider("Alpha", 0.01, 10.0, 1.0)
+                    elif model_type == "RandomForest Regression Model":
+                        model_params['n_estimators'] = st.slider("Number of estimators", 10, 500, 100)
+                    elif model_type == "DecisionTree Regression Model":
+                        model_params['max_depth'] = st.slider("Max depth", 1, 50, 10)
+            
                 # Reset training if config changes
                 if (
                     model_type != st.session_state.prev_model_type or
@@ -826,12 +856,12 @@ if 'df' in locals() or 'df' in globals():
             
                 st.session_state.prev_model_type = model_type
                 st.session_state.prev_params = model_params
-                            
-                if st.button("🚀 Train Model"):
+            
+                if train_clicked:
                     st.session_state.model_obj = Model(df, feature_columns, target_column)
                     st.session_state.model_obj.train_model(model_type=model_type, **model_params)
                     st.session_state.model_trained = True
-                    st.success("Model Trained Successfully")
+                    st.success("✅ Model Trained Successfully!")
                     # st.balloons()
 
                 # Check if model is trained before showing output optionsa
@@ -976,9 +1006,14 @@ if 'df' in locals() or 'df' in globals():
 
                     st.markdown("## 🔁 All Subset Regression")
 
-                    if st.button("Run All Subset Regression"):
+                    col1, col2 = st.columns([1, 3])
+                    with col1:
+                        run_subsets = st.button("Run All Subset Regression", use_container_width=True)
+                    
+                    if run_subsets:
                         all_subsets_results = model_obj.train_on_all_subsets(model_type=model_type, **model_params)
                         st.session_state.all_subsets_results = all_subsets_results
+                        st.success("✅ All Subset Regression completed!")
 
                     if "all_subsets_results" in st.session_state:
                         results = st.session_state.all_subsets_results
@@ -1035,13 +1070,15 @@ if 'df' in locals() or 'df' in globals():
             viz = Visualize(df)
 
         # Dropdown to select plot type
-        plot_type = st.selectbox("📊 Select Visualization Type", options=[
-            "Scatter with Marginal Histogram",
-            "Pair Plot",
-            "Correlation Heatmap",
-            "Interactive Relation Scatter",
-            "Interactive Relation Box"
-        ])
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            plot_type = st.selectbox("📊 Select Visualization Type", options=[
+                "Scatter with Marginal Histogram",
+                "Pair Plot",
+                "Correlation Heatmap",
+                "Interactive Relation Scatter",
+                "Interactive Relation Box"
+            ])
         
         # Display selected plot
         if plot_type == "Scatter with Marginal Histogram":
