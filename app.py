@@ -54,7 +54,9 @@ class Visualize:
             return
 
         # Dropdown to select column
-        selected_col = st.selectbox("Select a numeric column to visualize", numeric_cols)
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            selected_col = st.selectbox("Select a numeric column to visualize", numeric_cols)
 
         series = self.df[selected_col].dropna()
         y_values = series.values
