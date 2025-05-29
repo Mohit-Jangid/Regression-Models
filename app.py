@@ -709,6 +709,8 @@ if uploaded_file is not None:
         def handle_missing_values(df, strategy):
             if strategy == "Drop missing values":
                 df = df.dropna()
+            if strategy == "Fill with Zero":
+                df = df.fillna(0)
             if strategy == "Fill with mean value":
                 df = df.fillna(df.mean())
             if strategy == "Fill with median value":
@@ -720,7 +722,7 @@ if uploaded_file is not None:
         col1, col2 = st.columns([1, 3])
         with col1:
             missing_value_strategy = st.selectbox("How to handle missing values?", 
-                                                ["Drop missing values", "Fill with mean value", "Fill with median value", "Fill with mode value"], index=None, placeholder="Choose an option")
+                                                ["Drop missing values", "Fill with Zero", "Fill with mean value", "Fill with median value", "Fill with mode value"], index=None, placeholder="Choose an option")
         
         if missing_value_strategy:
             df = handle_missing_values(df, missing_value_strategy)
