@@ -1,3 +1,13 @@
 # Data Visualization & Regression Model Dashboard
 
-Designed and developed an advanced interactive dashboard that empowers users to seamlessly upload their own datasets, instantly view a summarized overview with interactive tables, and automatically highlight missing values and outliers. The dashboard provides functionality to remove irrelevant columns, handle missing values (removal or replacement), and prepare data for analysis. Users can explore rich, dynamic visualizations including scatter plots with marginal histograms, pair plots, correlation heatmaps, and interactive relation plots (scatter and box). On the modeling side, the platform supports multiple regression algorithms — Linear, Ridge, Lasso, Random Forest, and Decision Tree — allowing flexible model selection and training. Post-training, users can access an extensive suite of analytical outputs such as feature importance (chart and table), regression equations, performance evaluation metrics, actual vs predicted plots, multiple residual visualizations, and learning curves. Additional features include making predictions with custom inputs and running all subset regression for optimal feature selection.
+Developed an advanced interactive Streamlit dashboard allowing users to upload custom datasets and instantly view an interactive summary table with automated highlighting of missing values and outliers.
+
+Implemented robust data preprocessing to remove irrelevant columns, handle missing values (deletion or replacement), and prepare datasets for analysis.
+
+Integrated dynamic visualization options including scatter plots with marginal histograms, pair plots, correlation heatmaps, and interactive relation plots (scatter and box).
+
+Enabled flexible regression model training with multiple algorithms — Linear, Ridge, Lasso, Random Forest, and Decision Tree — for varied analytical needs.
+
+Delivered comprehensive post-training insights such as feature importance (chart and table), regression equations, model performance metrics, actual vs predicted plots, residual analysis (scatter, histogram, combined), and learning curves.
+
+Added advanced analytical capabilities including predictions with custom inputs and all subset regression for optimal feature selection.
