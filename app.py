@@ -11,7 +11,7 @@
 
 import streamlit as st
 import time
-# from st_pages import add_page_title
+# from st_pages import add_page_title           
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -545,49 +545,100 @@ class Model:
         results = []
         n = len(self.df)
 
-        # Iterate over all non-empty subsets of features
         for r in range(1, len(self.feature_columns) + 1):
             for subset in combinations(self.feature_columns, r):
-                # Create a new Model instance with subset features only
+                # Create new Model instance for this subset
                 subset_model = Model(self.df, list(subset), self.target_column)
 
-                # Train with your existing train_model method
+                # Train with selected model type
                 subset_model.train_model(model_type=model_type, **kwargs)
 
-                # Prepare metrics
+                # --- Evaluate (reuse your evaluate_model math without Streamlit UI) ---
                 mae = mean_absolute_error(subset_model.y, subset_model.y_pred)
                 mse = mean_squared_error(subset_model.y, subset_model.y_pred)
-                r2 = subset_model.model.score(subset_model.X_scaled, subset_model.y)
+                rmse = np.sqrt(mse)
+                r2 = r2_score(subset_model.y, subset_model.y_pred)
                 adj_r2 = (1 - (1 - r2) * (n - 1) / (n - len(subset) - 1)) if n > len(subset) + 1 else r2
 
-                
-
-                # Generate equation using your method (without streamlit display)
-                # We'll replicate your generate_equation logic here but return as string
+                # --- Equation or importance ---
                 if hasattr(subset_model.model, 'coef_'):
+                    # Use your generate_equation logic but without Streamlit output
                     intercept = subset_model.model.intercept_
                     pivot_values = subset_model.df[list(subset)].mean()
-                    coefs = subset_model.model.coef_ / subset_model.X.std()
-                    terms = [f"({coef:.4f} * ({feat} - {pivot_values[feat]:.3f}))" for coef, feat in zip(coefs, subset)]
+                    coefs = subset_model.model.coef_ / np.std(subset_model.X, axis=0)
+                    terms = [f"({coef:.4f} * ({feat} - {pivot_values[feat]:.3f}))"
+                            for coef, feat in zip(coefs, subset)]
                     equation = f"{self.target_column} = {intercept:.4f} + " + " + ".join(terms)
+                elif hasattr(subset_model.model, 'feature_importances_'):
+                    importances = dict(zip(subset, subset_model.model.feature_importances_))
+                    equation = f"Feature importances: {importances}"
                 else:
-                    equation = "Equation not available for this model."
+                    equation = "Equation/importance not available."
 
-                # Collect results
+                # --- Collect results ---
                 results.append({
                     'subset': len(results) + 1,
                     'features': list(subset),
-                    'r2': r2,
-                    'adj_r2': adj_r2,
+                    'r2': r2 * 100,          # %
+                    'adj_r2': adj_r2 * 100,  # %
                     'mae': mae,
                     'mse': mse,
+                    'rmse': rmse,
                     'equation': equation,
-                    'model': subset_model  # Store whole Model for plotting and later use
+                    'model_type': model_type,
+                    'model': subset_model
                 })
 
-        # Sort by adjusted R² descending
+        # Sort by adjusted R² (descending)
         results = sorted(results, key=lambda x: x['adj_r2'], reverse=True)
         return results
+
+    def prepare_subset_results_dataframe(self, results):
+        feature_columns = self.feature_columns
+        records = []
+        for res in results:
+            row = {
+                'Adjusted R²': res['adj_r2'],
+                'R²': res['r2'],
+                'MSE': res['mse'],
+                'MAE': res['mae'],
+                'Equation': res['equation']
+            }
+            # Fill feature coefficients (standardized)
+            model = res['model']
+            if hasattr(model.model, 'coef_'):
+                coefs = model.model.coef_ / model.X.std()
+                for f, c in zip(res['features'], coefs):
+                    row[f] = c
+            records.append(row)
+
+        df = pd.DataFrame(records)
+        
+        # Ensure all feature columns are present
+        for feat in feature_columns:
+            if feat not in df.columns:
+                df[feat] = np.nan
+
+        df = df[['Adjusted R²', 'R²'] + feature_columns + ['MSE', 'MAE', 'Equation']]
+        return df.fillna(0)
+    
+    @staticmethod
+    def color_coefficients(val, max_abs_val=None):
+        if pd.isna(val):
+            return ""
+        
+        # Default to raw scaling if no max provided
+        if max_abs_val is None or max_abs_val == 0:
+            max_abs_val = abs(val)
+        
+        # Base color by sign
+        base_color = "0, 200, 0" if val > 0 else "200, 0, 0"
+        
+        # Normalize opacity (max 0.4)
+        opacity = min(0.4, abs(val) / max_abs_val)
+        
+        return f"background-color: rgba({base_color}, {opacity:.2f});"
+
 
 # Dashboard Frontend
 
@@ -866,7 +917,7 @@ if 'df' in locals() or 'df' in globals():
                     st.success("✅ Model Trained Successfully!")
                     # st.balloons()
 
-                # Check if model is trained before showing output optionsa
+                # Check if model is trained before showing output options
                 if st.session_state.get("model_trained"):
                     model_obj = st.session_state.model_obj
 
@@ -1065,6 +1116,33 @@ if 'df' in locals() or 'df' in globals():
                                 with tabs[6]:
                                     model.learning_curve()
 
+                        st.markdown("## 📊 Subset Regression Summary Table")
+
+                        if "all_subsets_results" in st.session_state:
+                            results = st.session_state.all_subsets_results
+                            feature_columns = model_obj.feature_columns
+
+                            # Convert results to DataFrame
+                            df = model_obj.prepare_subset_results_dataframe(results)
+
+                            # Find max absolute coefficient in these columns
+                            max_abs_val = df[feature_columns].abs().max().max()
+
+                            # Apply styling with normalized opacity
+                            styled_df = df.style \
+                                .map(lambda v: Model.color_coefficients(v, max_abs_val), subset=feature_columns) \
+                                .format({
+                                    'Adjusted R²': '{:.4f}',
+                                    'R²': '{:.4f}',
+                                    'MSE': '{:.4f}',
+                                    'MAE': '{:.4f}',
+                                })
+
+                            st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+                            # st.download_button("📥 Download Results as CSV", df.to_csv(index=False), file_name="subset_results.csv")
+
+
 
     elif Type == "Data Visualization":
 
@@ -1093,3 +1171,6 @@ if 'df' in locals() or 'df' in globals():
             viz.interactive_relation_scatter()
         if plot_type == "Interactive Relation Box":
             viz.interactive_relation_box()
+
+
+            
